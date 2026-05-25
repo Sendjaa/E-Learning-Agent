@@ -1,0 +1,17 @@
+# Jangan upload file konfigurasi rahasia ke GitHub
+.env
+
+# Jangan upload folder cache otomatis Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jangan upload folder log atau report bawaan playwright jika ada
+.pytest_cache/
+playwright-report/
+test-results/
+
+# File sampah sistem operasi
+.DS_Store
+Thumbs.db

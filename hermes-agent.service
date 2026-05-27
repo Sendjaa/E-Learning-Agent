@@ -1,0 +1,16 @@
+[Unit]
+Description=Hermes E-Learning Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c 'source /opt/hermes-agent/venv/bin/activate && python /opt/hermes-agent/hermes_cloud_agent.py'
+WorkingDirectory=/opt/hermes-agent
+Restart=always
+RestartSec=10
+StandardOutput=append:/opt/hermes-agent/logs/hermes.log
+ErrorOutput=append:/opt/hermes-agent/logs/hermes_error.log
+
+[Install]
+WantedBy=multi-user.target

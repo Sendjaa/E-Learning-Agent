@@ -7,8 +7,9 @@ from openai import OpenAI
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 from dotenv import load_dotenv
 
-# Memuat environment variables dari file .env
-load_dotenv()
+# Memuat environment variables dari file .env (path absolut, cross-platform)
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(_SCRIPT_DIR, ".env"))
 
 # --- 1. KONFIGURASI ---
 def _env(key, default=""):
@@ -74,15 +75,16 @@ def _pecah_pesan(teks, batas):
     return bagian
 
 
-def send_telegram_message(message, parse_mode="HTML", reply_markup=None):
-    """Kirim pesan Telegram; mendukung tombol inline keyboard."""
+def send_telegram_message(message, parse_mode="HTML", reply_markup=None, chat_id=None):
+    """Kirim pesan Telegram; mendukung tombol inline keyboard dan chat_id custom."""
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     batas = 3900 if parse_mode else TELEGRAM_MAX_LEN
     semua_ok = True
+    target_chat = chat_id if chat_id else TELEGRAM_CHAT_ID
 
     chunks = _pecah_pesan(message, batas)
     for idx, bagian in enumerate(chunks):
-        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": bagian}
+        payload = {"chat_id": target_chat, "text": bagian}
         if parse_mode:
             payload["parse_mode"] = parse_mode
         
@@ -450,7 +452,29 @@ def jalankan_polling_tombol():
                 for update in res["result"]:
                     offset = update["update_id"] + 1
                     
-                    # Cek apakah ada aksi klik tombol (callback_query)
+                    # --- HANDLE PESAN TEKS BIASA ---
+                    if "message" in update:
+                        msg = update["message"]
+                        chat_id = msg.get("chat", {}).get("id")
+                        text = msg.get("text", "").strip()
+                        # Abaikan pesan tanpa teks (foto, stiker, dll)
+                        if text:
+                            print(f"[Bot] Pesan diterima: '{text}' dari chat {chat_id}")
+                            perintah = text.lower().split()[0] if text else ""
+                            # Balas sapaan
+                            if text.lower() in ("hallo hermes", "halo hermes", "hello hermes", "hi hermes"):
+                                send_telegram_message("Halo! Saya Hermes, asisten e-learning kamu. Ketik /cektugas untuk melihat tugas aktif.", chat_id=chat_id)
+                            # Perintah cek tugas manual
+                            elif perintah == "/cektugas":
+                                send_telegram_message("⏳ Memeriksa tugas e-learning, mohon tunggu...", chat_id=chat_id)
+                                try:
+                                    run_hermes_agent()
+                                except Exception as e:
+                                    send_telegram_message(f"❌ Gagal cek tugas: {escape_html(str(e))}", chat_id=chat_id)
+                            else:
+                                send_telegram_message("Saya hanya merespon:\n• <b>hallo hermes</b> — sapaan\n• <b>/cektugas</b> — cek tugas aktif", chat_id=chat_id)
+
+                    # --- HANDLE KLIK TOMBOL (callback_query) ---
                     if "callback_query" in update:
                         cb = update["callback_query"]
                         cb_id = cb["id"]

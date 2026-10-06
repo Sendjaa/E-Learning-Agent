@@ -15,3 +15,6 @@ test-results/
 # File sampah sistem operasi
 .DS_Store
 Thumbs.db
+
+# Dump HTML halaman E-Learning saat linimasa terdeteksi kosong
+debug_linimasa.html

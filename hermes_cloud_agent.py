@@ -131,6 +131,12 @@ def kirim_analisis_jawaban(nama_t, link_t, jawaban):
     return send_telegram_message(footer)
 
 
+# Selector blok Linimasa Moodle (core: li[data-region='event-list-item'])
+SELECTOR_ITEM_LINIMASA = (
+    "[data-region='event-list-item'], .event-list-item, .timeline-event-item"
+)
+
+
 def parse_timeline_item(item):
     link = item.locator("a[href*='mod/assign']").first
     nama = item.locator("h6.event-name").first.inner_text().strip()
@@ -365,10 +371,16 @@ def run_hermes_agent():
             print("[Playwright] Login sukses. Membuka dasbor...")
             page.goto(f"{ELEARNING_URL}/my/", timeout=60000)
             page.wait_for_load_state("domcontentloaded")
-            time.sleep(3)
+            # Blok Linimasa diisi lewat AJAX setelah DOM siap: tunggu elemennya,
+            # jangan asal sleep -- 3 detik sering belum cukup di koneksi lambat.
+            try:
+                page.wait_for_selector(SELECTOR_ITEM_LINIMASA, timeout=30000)
+            except PlaywrightTimeoutError:
+                print("[Playwright] Elemen linimasa tak muncul dalam 30s.")
+            time.sleep(1)
 
             print("[Playwright] Membaca blok Linimasa...")
-            timeline_items = page.locator("[data-region='event-list-item'], .event-list-item, .timeline-event-item")
+            timeline_items = page.locator(SELECTOR_ITEM_LINIMASA)
             total_tugas = timeline_items.count()
             print(f"[Status] Ditemukan total {total_tugas} tugas aktif.")
 
@@ -423,11 +435,33 @@ def run_hermes_agent():
 
             else:
                 print("[Status] Bersih! Tidak ada tugas aktif di Linimasa.")
+                jumlah_blok = page.locator(".block_timeline").count()
+                dump = os.path.join(_SCRIPT_DIR, "debug_linimasa.html")
+                try:
+                    with open(dump, "w", encoding="utf-8") as f_dump:
+                        f_dump.write(page.content())
+                except OSError as e_dump:
+                    print(f"[Debug] Gagal tulis dump: {e_dump}")
+                send_telegram_message(
+                    "✅ <b>Tidak ada tugas aktif</b> di Linimasa E-Learning saat ini.\n"
+                    f"🌐 URL: {escape_html(page.url)}\n"
+                    f"🧩 Blok Linimasa terdeteksi: {jumlah_blok}\n"
+                    f"<i>HTML halaman disimpan ke {escape_html(dump)} untuk diperiksa.</i>"
+                )
 
         except PlaywrightTimeoutError as te:
             print(f"[Timeout Error] Koneksi lambat: {te}")
+            send_telegram_message(
+                "⏱️ <b>Timeout saat membuka E-Learning.</b>\n"
+                "Cek koneksi lalu jalankan /cektugas lagi.\n"
+                f"<code>{escape_html(str(te))}</code>"
+            )
         except Exception as e:
             print(f"[Unexpected Error] Kendala: {e}")
+            send_telegram_message(
+                "❌ <b>Gagal cek tugas:</b>\n"
+                f"<code>{escape_html(str(e))}</code>"
+            )
         finally:
             try:
                 browser.close()

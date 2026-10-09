@@ -1,0 +1,18 @@
+[Unit]
+Description=Hermes Scraper (cek linimasa E-Learning)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__DIR__
+Environment=PATH=__DIR__/venv/bin:/usr/bin:/bin
+ExecStart=__DIR__/venv/bin/python -m hermes.scraper.run_check
+Restart=always
+RestartSec=10
+StandardOutput=append:__DIR__/logs/scraper.log
+ErrorOutput=append:__DIR__/logs/scraper_error.log
+
+[Install]
+WantedBy=multi-user.target

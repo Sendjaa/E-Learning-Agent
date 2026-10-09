@@ -1,0 +1,1701 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Workshop Hermes</title>
+<style>
+  :root {
+    --ink: #1b2233;
+    --muted: #5d6784;
+    --panel: #ffffff;
+    --line: #d7dfee;
+    --accent: #3f6ae0;
+    --bad: #d9484b;
+    --bg: #eef2fa;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #e8ecf5;
+      --muted: #97a1b8;
+      --panel: #1b202b;
+      --line: #2b3243;
+      --accent: #7ea2ff;
+      --bad: #ef6b6e;
+      --bg: #12151d;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    padding: 14px 16px 16px;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  h1 { margin: 0; font-size: 19px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .kanan { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+  .tombol {
+    font: inherit;
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .tombol:hover { border-color: var(--accent); color: var(--accent); }
+
+  .panggung {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 14px;
+  }
+
+  .ruangan {
+    position: relative;
+    height: 100%;
+    min-height: 0;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .ruangan canvas { display: block; }
+
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.94);
+    color: #1b2233;
+    border: 1px solid rgba(0,0,0,.1);
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+  }
+  .label.mendesak { background: var(--bad); color: #fff; border-color: transparent; }
+  .label.blok {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 12px;
+    background: #262c38;
+    color: #f2c94c;
+    border-color: transparent;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .petunjuk {
+    position: absolute;
+    left: 12px; bottom: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px 12px;
+    pointer-events: none;
+  }
+  .peringatan {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    padding: 24px; text-align: center;
+    font-size: 14px; color: var(--muted);
+  }
+
+  aside {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  /* Jendela sempit: ruangan ditaruh di atas, daftar kursi di bawahnya, dan
+     halaman boleh digulir lagi. */
+  @media (max-width: 820px) {
+    body { height: auto; overflow: auto; }
+    .panggung { grid-template-columns: 1fr; }
+    .ruangan { height: 62vh; }
+    aside { height: auto; max-height: 46vh; }
+  }
+  aside h2 { margin: 0 0 10px; font-size: 15px; }
+  .ringkas { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+  .ringkas b { color: var(--ink); }             /* angka beban harus terbaca, bukan abu-abu */
+  .santai-teks { display: block; margin-top: 8px; font-size: 12px; color: #c8871f; font-weight: 600; }
+  .bar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: 6px; }
+  .bar span { display: block; height: 100%; background: var(--accent); transition: width .5s; }
+
+  .daftar { display: flex; flex-direction: column; margin-bottom: 6px; }
+  .daftar .blok-judul {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    margin: 12px 0 4px;
+  }
+  .daftar button {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 7px 8px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .daftar button:hover { background: rgba(63,106,224,.09); }
+  .daftar button.aktif { border-color: var(--accent); background: rgba(63,106,224,.13); }
+  .daftar .titik { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .daftar .nama-kursi { font-weight: 600; font-size: 13px; display: block; }
+  /* status kursi harus terbaca sekilas, jadi ukurannya dinaikkan dan warnanya
+     diambil dari --ink, bukan --muted yang tenggelam di latar panel */
+  .daftar .kecil { font-size: 12px; color: var(--ink); opacity: .7; display: block; }
+  .daftar .kecil.santai { color: #c8871f; opacity: 1; font-weight: 600; }
+  .pisah { border-top: 1px solid var(--line); margin: 12px 0 10px; }
+
+  ul { list-style: none; margin: 12px 0 0; padding: 0; font-size: 13px; }
+  li { padding: 8px 0; border-top: 1px solid var(--line); }
+  li a { color: var(--accent); text-decoration: none; }
+  li .sisa { color: var(--muted); display: block; }
+  li .sisa.akut { color: var(--bad); font-weight: 600; }
+  .kosong { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛠️ Workshop Hermes</h1>
+  <div class="kanan">
+    <div class="meta" id="meta">memuat…</div>
+    <button class="tombol" id="tombol-layar" type="button">⛶ Layar penuh</button>
+  </div>
+</header>
+
+<div class="panggung">
+  <div class="ruangan" id="ruangan">
+    <div class="petunjuk" id="petunjuk">geser untuk memutar · scroll untuk zoom · klik orang untuk detail</div>
+  </div>
+
+  <aside id="panel">
+    <h2>Pilih Orang</h2>
+    <div class="daftar" id="daftar"></div>
+    <div class="pisah"></div>
+    <h2 id="panel-nama">Pilih orang</h2>
+    <div class="ringkas" id="panel-ringkas">Klik orang di ruangan, atau nama di daftar atas.</div>
+    <ul id="panel-tugas"></ul>
+  </aside>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+/* Ukuran nyata dalam meter, proporsi orang 1.72 m yang duduk.
+   Meja duduk 0.74 (bukan 0.95 — itu tinggi meja berdiri), dudukan kursi 0.45. */
+const TINGGI_MEJA = 0.74;     // permukaan atas meja
+const TEBAL_MEJA = 0.06;
+const TINGGI_DUDUK = 0.45;    // permukaan atas dudukan kursi
+const PANGGUL_NAIK = 0.05;    // panggul sedikit di atas dudukan
+const JARAK_MUNDUR = 0.55;    // panggul di belakang tepi meja
+const PANGGUL_Y = TINGGI_DUDUK + PANGGUL_NAIK;
+
+const LEBAR_MEJA = 1.6;
+const DALAM_MEJA = 0.8;
+
+/* Ruangan dibagi jadi blok. Kursi dikelompokkan menurut field `blok` dari server,
+   tiap blok disusun sebagai grid kecil, lalu blok berjajar sepanjang sumbu X. */
+const JARAK_SISI = 3.2;       // jarak antar meja dalam satu blok
+const JARAK_DALAM = 2.8;      // jarak antar baris meja
+const JARAK_BLOK = 7.0;       // jarak antar pusat blok
+const KOLOM_BLOK = 2;         // maksimal meja per baris dalam satu blok
+const TINGGI_SEKAT = 1.45;    // sekat antar blok — di atas kepala orang duduk (1.19)
+const WARNA_BLOK = [0x8fa0b8, 0xc2ab86, 0x9dc7a8, 0xd6a0c4];  // cat lantai zona kerja
+
+const WARNA_BAJU = [0x3f6ae0, 0x2f9e6f, 0xc8871f, 0x8b5cd6, 0x1f9bb5, 0xd1478a, 0x5a6b8c, 0xe0574f];
+const WARNA_KULIT = [0xefc9a4, 0xdcae86, 0xc08a5e];
+const WARNA_RAMBUT = [0x2b2119, 0x14100d, 0x4a3421, 0x6b5540];
+const WARNA_CELANA = 0x39415a;
+
+const LEBAR_RUANG = 15;
+const DALAM_RUANG = 11;       // lantai membentang z -5.5 .. 5.5
+const Z_DINDING = -5.5;
+
+/* Pojok santai di depan ruangan. Kursi yang tidak memegang tugas tidak duduk
+   manis di mejanya — orangnya pindah ke sini dan main game. */
+const TITIK_SANTAI = [
+  { x: -6.2, z: 4.2 }, { x: -4.0, z: 4.6 }, { x: -1.8, z: 4.2 },
+  { x: 0.4, z: 4.6 }, { x: 2.6, z: 4.2 }
+];
+/* Pangkal paha ada di 0.5 sedangkan kaki panjangnya 0.88, jadi orang yang
+   berdiri harus diangkat segini biar telapaknya pas di lantai. */
+const TINGGI_BERDIRI = 0.38;
+
+let data = { kursi: [], skor_maks: 1, total_tugas: 0, terakhir_cek: null };
+let orang = [];
+let scene, camera, renderer, labelRenderer, controls, THREE;
+let hemi, matahari, warnaBg;
+let terpilih = null;                  // indeks kursi yang sedang dilihat
+let modeMalam = false;
+const jam = { terakhir: performance.now() };
+
+/* Kamera tidak dipindah mendadak: posisi & titik pandang di-lerp tiap frame. */
+const tuju = { pos: null, target: null };
+/* Daftar objek yang berubah saat mode malam — diisi saat perabot dibangun. */
+const lampuGantungDaftar = [];
+const kilauDaftar = [];
+const kacaJendela = [];
+const sinarJendela = [];
+
+const PETUNJUK = "geser memutar · scroll zoom · klik orang · <b>F</b> fokus · <b>M</b> mode malam";
+
+function sisaTeks(jamSisa) {
+  if (jamSisa === null) return "tenggat tak terbaca";
+  if (jamSisa < 0) return "lewat tenggat";
+  if (jamSisa < 24) return jamSisa.toFixed(0) + " jam lagi";
+  return (jamSisa / 24).toFixed(1) + " hari lagi";
+}
+
+/* ==================== RUANGAN ==================== */
+function teksturLantai() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 512;
+  const g = c.getContext("2d");
+
+  g.fillStyle = "#8f9298";                       // lantai beton epoksi
+  g.fillRect(0, 0, 512, 512);
+
+  for (let i = 0; i < 9000; i++) {               // bintik agregat
+    const r = Math.random();
+    g.fillStyle = r < 0.5 ? "rgba(255,255,255,.10)" : "rgba(40,44,52,.10)";
+    const s = r < 0.85 ? 1 : 2;
+    g.fillRect(Math.random() * 512, Math.random() * 512, s, s);
+  }
+
+  for (let i = 0; i < 26; i++) {                 // bercak tidak rata
+    const x = Math.random() * 512;
+    const y = Math.random() * 512;
+    const rad = 20 + Math.random() * 70;
+    const grd = g.createRadialGradient(x, y, 0, x, y, rad);
+    grd.addColorStop(0, "rgba(118,122,132,.18)");
+    grd.addColorStop(1, "rgba(118,122,132,0)");
+    g.fillStyle = grd;
+    g.beginPath();
+    g.arc(x, y, rad, 0, Math.PI * 2);
+    g.fill();
+  }
+
+  g.strokeStyle = "rgba(28,32,38,.35)";          // nat sambungan pelat beton
+  g.lineWidth = 3;
+  [0, 256].forEach(function (p) {
+    g.beginPath(); g.moveTo(p + 1.5, 0); g.lineTo(p + 1.5, 512); g.stroke();
+    g.beginPath(); g.moveTo(0, p + 1.5); g.lineTo(512, p + 1.5); g.stroke();
+  });
+
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(3.0, 2.2);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+
+/* Pemandangan luar: digambar di kanvas (langit, siluet gedung, jalan), lalu
+   dipakai sebagai map sekaligus emissiveMap — kaca jadi terlihat menembus ke
+   luar, bukan papan biru. */
+function teksturPemandangan() {
+  const c = document.createElement("canvas");
+  c.width = 256;
+  c.height = 192;
+  const g = c.getContext("2d");
+
+  const langit = g.createLinearGradient(0, 0, 0, 150);
+  langit.addColorStop(0, "#6ea8e0");
+  langit.addColorStop(0.6, "#b9d6f0");
+  langit.addColorStop(1, "#e2edf8");
+  g.fillStyle = langit;
+  g.fillRect(0, 0, 256, 192);
+
+  g.fillStyle = "rgba(255,255,255,.75)";           // awan
+  [[30, 34, 26], [86, 22, 32], [188, 40, 30]].forEach(function (a) {
+    g.beginPath();
+    g.ellipse(a[0], a[1], a[2], a[2] * 0.42, 0, 0, Math.PI * 2);
+    g.fill();
+  });
+
+  [[8, 118, 34, 42], [50, 136, 26, 24], [84, 106, 40, 54],
+   [132, 126, 30, 34], [170, 114, 38, 46], [216, 138, 30, 22]]
+    .forEach(function (b) {
+      g.fillStyle = "#8d99ad";
+      g.fillRect(b[0], b[1], b[2], b[3]);
+      g.fillStyle = "rgba(226,235,246,.5)";        // jendela gedung
+      for (let y = b[1] + 7; y < b[1] + b[3] - 6; y += 11) {
+        for (let x = b[0] + 5; x < b[0] + b[2] - 6; x += 10) g.fillRect(x, y, 5, 6);
+      }
+    });
+
+  g.fillStyle = "#6f7c8f";                         // jalan dan trotoar
+  g.fillRect(0, 158, 256, 34);
+  g.fillStyle = "#8d99ad";
+  g.fillRect(0, 152, 256, 7);
+
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function jendela(x) {
+  const grup = new THREE.Group();
+  const rangka = new THREE.MeshStandardMaterial({ color: 0x8f96a1, roughness: 0.45, metalness: 0.5 });
+  const pemandangan = teksturPemandangan();
+  const kaca = new THREE.MeshStandardMaterial({
+    map: pemandangan,
+    emissive: 0xffffff,
+    emissiveMap: pemandangan,
+    emissiveIntensity: 1.2,
+    roughness: 0.18
+  });
+  const Y = 1.9, LEBAR = 1.3, TINGGI = 1.3, TEBAL_BILAH = 0.07;
+
+  const daun = new THREE.Mesh(new THREE.BoxGeometry(LEBAR, TINGGI, 0.05), kaca);
+  daun.position.set(x, Y, Z_DINDING + 0.16);
+  grup.add(daun);
+  kacaJendela.push(kaca);
+
+  const tepi = [
+    [LEBAR + TEBAL_BILAH, TEBAL_BILAH, 0, TINGGI / 2],
+    [LEBAR + TEBAL_BILAH, TEBAL_BILAH, 0, -TINGGI / 2],
+    [TEBAL_BILAH, TINGGI, -(LEBAR + TEBAL_BILAH) / 2, 0],
+    [TEBAL_BILAH, TINGGI, (LEBAR + TEBAL_BILAH) / 2, 0]
+  ];
+  tepi.forEach(function (b) {
+    const bilah = new THREE.Mesh(new THREE.BoxGeometry(b[0], b[1], 0.12), rangka);
+    bilah.position.set(x + b[2], Y + b[3], Z_DINDING + 0.19);
+    grup.add(bilah);
+  });
+
+  const palang = new THREE.Mesh(new THREE.BoxGeometry(0.05, TINGGI, 0.08), rangka);
+  palang.position.set(x, Y, Z_DINDING + 0.19);
+  grup.add(palang);
+
+  const ambang = new THREE.Mesh(new THREE.BoxGeometry(LEBAR + 0.3, 0.06, 0.22), rangka);
+  ambang.position.set(x, Y - TINGGI / 2 - 0.03, Z_DINDING + 0.22);
+  grup.add(ambang);
+
+  scene.add(grup);
+
+  // cahaya siang masuk lewat jendela
+  const sinar = new THREE.DirectionalLight(0xfff3e0, 0.6);
+  sinar.position.set(x, Y + 0.8, Z_DINDING + 1);
+  sinar.target.position.set(0, 0.6, 1.5);
+  scene.add(sinar, sinar.target);
+  sinarJendela.push(sinar);
+}
+
+/* ==================== DEKORASI DINDING & SUDUT ==================== */
+/* Beton ekspos dengan nat bekisting — dinding polos bikin ruangan terbaca
+   seperti kotak render, bukan bangunan. */
+function teksturDinding() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 256;
+  const g = c.getContext("2d");
+  g.fillStyle = "#c9ccd1";
+  g.fillRect(0, 0, 256, 256);
+
+  for (let i = 0; i < 700; i++) {                 // bercak adukan tidak rata
+    g.fillStyle = Math.random() > 0.5 ? "rgba(150,155,163,.13)" : "rgba(236,238,241,.13)";
+    g.beginPath();
+    g.arc(Math.random() * 256, Math.random() * 256, 2 + Math.random() * 13, 0, Math.PI * 2);
+    g.fill();
+  }
+
+  g.strokeStyle = "rgba(122,128,138,.35)";        // nat sambungan bekisting
+  g.lineWidth = 2;
+  [0, 128].forEach(function (p) {
+    g.beginPath(); g.moveTo(p + 1, 0); g.lineTo(p + 1, 256); g.stroke();
+    g.beginPath(); g.moveTo(0, p + 1); g.lineTo(256, p + 1); g.stroke();
+  });
+
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(4, 1.6);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+
+/* Tanaman pot untuk sudut ruangan. Daunnya disusun dari lingkaran, jadi satu
+   tanaman selalu punya bentuk yang sama tiap kali halaman dimuat. */
+function tanamanPot(x, z, tinggi) {
+  const grup = new THREE.Group();
+
+  const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.14, 0.28, 18), bahan(0xb0663f, 0.85));
+  pot.position.set(x, 0.14, z);
+  pot.castShadow = true;
+  pot.receiveShadow = true;
+  grup.add(pot);
+
+  const tanah = new THREE.Mesh(new THREE.CylinderGeometry(0.175, 0.175, 0.03, 18), bahan(0x3a2a1e, 0.98));
+  tanah.position.set(x, 0.28, z);
+  grup.add(tanah);
+
+  const daun = bahan(0x2f7d4f, 0.85);
+  for (let i = 0; i < 7; i++) {
+    const sudut = (i / 7) * Math.PI * 2;
+    const panjang = tinggi * (0.55 + (i % 3) * 0.17);
+    const batang = new THREE.Mesh(new THREE.CapsuleGeometry(0.045, panjang, 6, 12), daun);
+    batang.position.set(
+      x + Math.cos(sudut) * 0.1,
+      0.3 + panjang * 0.42,
+      z + Math.sin(sudut) * 0.1
+    );
+    batang.rotation.set(Math.cos(sudut) * 0.42, 0, -Math.sin(sudut) * 0.42);
+    batang.castShadow = true;
+    grup.add(batang);
+  }
+
+  return grup;
+}
+
+/* Rak buku dua tingkat di dinding belakang. */
+function rakDinding(x, lebar) {
+  const grup = new THREE.Group();
+  const papan = bahan(0x8a6440, 0.72);
+  const punggung = [0xc8553f, 0x2f6f9e, 0xd8a63a, 0x4a8a5c, 0x7b5ea7]
+    .map(function (w) { return bahan(w, 0.9); });
+
+  [1.2, 1.6].forEach(function (y, tingkat) {
+    const alas = new THREE.Mesh(new THREE.BoxGeometry(lebar, 0.05, 0.26), papan);
+    alas.position.set(x, y, Z_DINDING + 0.24);
+    alas.castShadow = true;
+    alas.receiveShadow = true;
+    grup.add(alas);
+
+    const jumlah = Math.floor((lebar - 0.14) / 0.09);
+    for (let n = 0; n < jumlah; n++) {
+      const tinggiBuku = 0.19 + ((n * 7) % 5) * 0.017;
+      const buku = new THREE.Mesh(
+        new THREE.BoxGeometry(0.062, tinggiBuku, 0.18),
+        punggung[(n + tingkat) % punggung.length]
+      );
+      buku.position.set(
+        x - lebar / 2 + 0.07 + n * 0.09,
+        y + 0.025 + tinggiBuku / 2,
+        Z_DINDING + 0.24
+      );
+      buku.castShadow = true;
+      grup.add(buku);
+    }
+  });
+
+  return grup;
+}
+
+/* Poster diagram di dinding. Digambar di kanvas, jadi tidak perlu file gambar. */
+function posterDinding(x, y, lebar, tinggi) {
+  const c = document.createElement("canvas");
+  c.width = 256;
+  c.height = 192;
+  const g = c.getContext("2d");
+  g.fillStyle = "#f2f0e8";
+  g.fillRect(0, 0, 256, 192);
+  g.strokeStyle = "#3b4250";
+  g.lineWidth = 4;
+  [[18, 22, 70, 34], [152, 20, 78, 38], [18, 92, 62, 34], [140, 88, 92, 32], [30, 150, 92, 28]]
+    .forEach(function (k) { g.strokeRect(k[0], k[1], k[2], k[3]); });
+  g.beginPath();
+  g.moveTo(88, 39); g.lineTo(152, 39);
+  g.moveTo(49, 56); g.lineTo(49, 92);
+  g.moveTo(186, 58); g.lineTo(186, 88);
+  g.moveTo(80, 109); g.lineTo(140, 104);
+  g.moveTo(76, 150); g.lineTo(76, 126);
+  g.stroke();
+  g.fillStyle = "#c8553f";
+  g.fillRect(18, 22, 70, 6);
+
+  const tekstur = new THREE.CanvasTexture(c);
+  tekstur.colorSpace = THREE.SRGBColorSpace;
+
+  const grup = new THREE.Group();
+  const bingkai = new THREE.Mesh(
+    new THREE.BoxGeometry(lebar + 0.06, tinggi + 0.06, 0.03),
+    bahan(0x3b4250, 0.6)
+  );
+  bingkai.position.set(x, y, Z_DINDING + 0.15);
+  grup.add(bingkai);
+
+  const kertas = new THREE.Mesh(
+    new THREE.PlaneGeometry(lebar, tinggi),
+    new THREE.MeshStandardMaterial({ map: tekstur, roughness: 0.95 })
+  );
+  kertas.position.set(x, y, Z_DINDING + 0.17);
+  grup.add(kertas);
+
+  return grup;
+}
+
+function bangunRuangan() {
+  const lantai = new THREE.Mesh(
+    new THREE.PlaneGeometry(LEBAR_RUANG, DALAM_RUANG),
+    new THREE.MeshStandardMaterial({ map: teksturLantai(), roughness: 0.55 })
+  );
+  lantai.rotation.x = -Math.PI / 2;
+  lantai.receiveShadow = true;
+  scene.add(lantai);
+
+  const dinding = new THREE.Mesh(
+    new THREE.BoxGeometry(LEBAR_RUANG, 3.4, 0.3),
+    new THREE.MeshStandardMaterial({ map: teksturDinding(), roughness: 0.94 })
+  );
+  dinding.position.set(0, 1.7, Z_DINDING);
+  dinding.receiveShadow = true;
+  scene.add(dinding);
+
+  // langit-langit menghadap ke bawah: tidak menghalangi kamera yang melihat dari atas.
+  // Warnanya dinaikkan — lampu gantung menyinarinya dari bawah, jadi plafon gelap
+  // gulita bikin ruangan terbaca seperti tidak bercahaya.
+  const langit = new THREE.Mesh(
+    new THREE.PlaneGeometry(LEBAR_RUANG, DALAM_RUANG),
+    new THREE.MeshStandardMaterial({ color: 0x7b828f, roughness: 0.92, metalness: 0.05 })
+  );
+  langit.rotation.x = Math.PI / 2;
+  langit.position.y = 3.4;
+  scene.add(langit);
+
+  // jendela digeser ke tepi: papan alat tiap blok ada di tengah dinding
+  jendela(-6.4);
+  jendela(6.4);
+
+  // dekorasi: tanaman di sudut, rak buku di tengah, poster di atas papan alat
+  // (y 2.62 aman — papan alat paling tinggi 2.48, jendela paling tinggi 2.55)
+  scene.add(tanamanPot(-6.9, -4.6, 0.85));
+  scene.add(tanamanPot(6.9, -4.6, 0.7));
+  scene.add(tanamanPot(6.9, 4.5, 0.9));
+  scene.add(rakDinding(0, 1.7));
+  scene.add(posterDinding(-2.0, 2.62, 0.72, 0.5));
+  scene.add(posterDinding(2.0, 2.62, 0.72, 0.5));
+
+  const alas = new THREE.Mesh(
+    new THREE.BoxGeometry(LEBAR_RUANG, 0.12, 0.06),
+    new THREE.MeshStandardMaterial({ color: 0xb6bbc3, roughness: 0.7 })
+  );
+  alas.position.set(0, 0.06, Z_DINDING + 0.17);
+  scene.add(alas);
+}
+
+/* ==================== PERABOT WORKSHOP ==================== */
+/* Papan alat (pegboard) per blok, di dinding belakang — pengganti papan tulis. */
+function papanAlat(x, lebar) {
+  const grup = new THREE.Group();
+  const L = Math.max(lebar, 1.6);
+
+  const bingkai = new THREE.Mesh(
+    new THREE.BoxGeometry(L + 0.16, 1.42, 0.05),
+    new THREE.MeshStandardMaterial({ color: 0x6f7683, roughness: 0.55, metalness: 0.35 })
+  );
+  bingkai.position.set(x, 1.85, Z_DINDING + 0.17);
+  grup.add(bingkai);
+
+  const bodi = new THREE.Mesh(
+    new THREE.BoxGeometry(L, 1.26, 0.06),
+    new THREE.MeshStandardMaterial({ color: 0xd8dbe0, roughness: 0.88 })
+  );
+  bodi.position.set(x, 1.85, Z_DINDING + 0.21);
+  bodi.receiveShadow = true;
+  grup.add(bodi);
+
+  // isi papan: koil kabel, kotak komponen, kunci pas, obeng
+  const koil = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.028, 10, 20), bahan(0x2b3243, 0.6));
+  koil.position.set(x - L / 2 + 0.26, 1.98, Z_DINDING + 0.26);
+  grup.add(koil);
+
+  const kotak = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.14, 0.1), bahan(0x2f9e6f, 0.7));
+  kotak.position.set(x - L / 2 + 0.62, 1.94, Z_DINDING + 0.28);
+  grup.add(kotak);
+
+  const kunci = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.34, 0.04), bahan(0xb9c0c9, 0.4));
+  kunci.position.set(x + L / 2 - 0.6, 1.82, Z_DINDING + 0.27);
+  grup.add(kunci);
+
+  const obeng = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.28, 12), bahan(0xc8871f, 0.5));
+  obeng.position.set(x + L / 2 - 0.28, 1.86, Z_DINDING + 0.27);
+  grup.add(obeng);
+
+  return grup;
+}
+
+/* Zona lantai: beton dicat warna blok, dibatasi garis kuning seperti marka bengkel. */
+function zonaLantai(x, lebar, dalam, warna) {
+  const grup = new THREE.Group();
+
+  const garis = new THREE.Mesh(
+    new THREE.PlaneGeometry(lebar, dalam),
+    new THREE.MeshStandardMaterial({ color: 0xe3b02a, roughness: 0.85 })
+  );
+  garis.rotation.x = -Math.PI / 2;
+  garis.position.set(x, 0.01, 0);
+  garis.receiveShadow = true;
+  grup.add(garis);
+
+  const isi = new THREE.Mesh(
+    new THREE.PlaneGeometry(lebar - 0.18, dalam - 0.18),
+    new THREE.MeshStandardMaterial({ color: warna, roughness: 0.75 })
+  );
+  isi.rotation.x = -Math.PI / 2;
+  isi.position.set(x, 0.014, 0);
+  isi.receiveShadow = true;
+  grup.add(isi);
+
+  return grup;
+}
+
+/* Genangan cahaya di lantai bawah tiap lampu. Ini pengganti termurah untuk
+   "lampu menerangi ruangan": satu bidang dengan gradasi radial, additive, tanpa
+   light kedua yang harus dihitung tiap frame. */
+function teksturKilau() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const g = c.getContext("2d");
+  const grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grd.addColorStop(0, "rgba(255,238,201,.55)");
+  grd.addColorStop(0.45, "rgba(255,232,186,.18)");
+  grd.addColorStop(1, "rgba(255,232,186,0)");
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/* Lampu gantung industri: kap logam, bohlam menyala, plus cahaya sungguhan. */
+function lampuGantung(x, z) {
+  const grup = new THREE.Group();
+
+  const kabel = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.012, 0.012, 0.86, 8),
+    bahan(0x2b3243, 0.85)
+  );
+  kabel.position.set(x, 2.96, z);
+  grup.add(kabel);
+
+  const kap = new THREE.Mesh(
+    new THREE.ConeGeometry(0.27, 0.26, 24, 1, true),
+    new THREE.MeshStandardMaterial({
+      color: 0x9aa3b0, roughness: 0.35, metalness: 0.6, side: THREE.DoubleSide
+    })
+  );
+  kap.position.set(x, 2.5, z);
+  grup.add(kap);
+
+  const bohlam = new THREE.Mesh(
+    new THREE.SphereGeometry(0.07, 16, 12),
+    new THREE.MeshStandardMaterial({ color: 0xfff4d8, emissive: 0xffe9b0, emissiveIntensity: 2.4 })
+  );
+  bohlam.position.set(x, 2.42, z);
+  grup.add(bohlam);
+
+  const kilau = new THREE.Mesh(
+    new THREE.PlaneGeometry(3.6, 3.6),
+    new THREE.MeshBasicMaterial({
+      map: teksturKilau(),
+      transparent: true,
+      opacity: 0.34,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    })
+  );
+  kilau.rotation.x = -Math.PI / 2;
+  kilau.position.set(x, 0.022, z);
+  grup.add(kilau);
+  kilauDaftar.push(kilau.material);
+
+  const cahaya = new THREE.PointLight(0xffe9c4, 10, 8, 2);
+  cahaya.position.set(x, 2.36, z);
+  grup.add(cahaya);
+  lampuGantungDaftar.push(cahaya);
+
+  return grup;
+}
+
+/* Lemari peralatan beroda: badan, tiga garis laci, roda. */
+function lemariAlat(x, z) {
+  const grup = new THREE.Group();
+
+  const bodi = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.92, 0.5), bahan(0x3f6ae0, 0.55));
+  bodi.position.set(x, 0.52, z);
+  bodi.castShadow = true;
+  grup.add(bodi);
+
+  const besi = bahan(0xb9c0c9, 0.4);
+  [0.28, 0.56, 0.84].forEach(function (y) {
+    const tarikan = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.03, 0.03), besi);
+    tarikan.position.set(x, y, z + 0.26);
+    grup.add(tarikan);
+  });
+
+  [[-0.22, -0.18], [0.22, -0.18], [-0.22, 0.18], [0.22, 0.18]].forEach(function (p) {
+    const roda = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 12), bahan(0x21252e, 0.7));
+    roda.rotation.z = Math.PI / 2;
+    roda.position.set(x + p[0], 0.05, z + p[1]);
+    grup.add(roda);
+  });
+
+  return grup;
+}
+
+/* Tumpukan peti penyimpanan. */
+function tumpukPeti(x, z, jumlah) {
+  const grup = new THREE.Group();
+  const warna = [0xc8871f, 0x2f9e6f, 0xd1478a, 0x5a6b8c];
+  for (let i = 0; i < jumlah; i++) {
+    const peti = new THREE.Mesh(
+      new THREE.BoxGeometry(0.44, 0.3, 0.4),
+      bahan(warna[i % warna.length], 0.8)
+    );
+    peti.position.set(x + (i % 2) * 0.04, 0.16 + i * 0.31, z);
+    peti.rotation.y = (i % 3 - 1) * 0.1;
+    peti.castShadow = true;
+    peti.receiveShadow = true;
+    grup.add(peti);
+  }
+  return grup;
+}
+
+/* Sekat antar blok. Tinggi 1.45, sedikit di atas kepala orang yang duduk,
+   jadi tiap blok terbaca sebagai bilik kerja sendiri tanpa menutup ruangan. */
+function sekat(x, dalam) {
+  const grup = new THREE.Group();
+  const papan = new THREE.Mesh(
+    new THREE.BoxGeometry(0.07, TINGGI_SEKAT, dalam),
+    new THREE.MeshStandardMaterial({ color: 0xcfd6e4, roughness: 0.92 })
+  );
+  papan.position.set(x, TINGGI_SEKAT / 2, 0);
+  papan.castShadow = true;
+  papan.receiveShadow = true;
+  grup.add(papan);
+
+  const rel = new THREE.Mesh(
+    new THREE.BoxGeometry(0.12, 0.05, dalam),
+    new THREE.MeshStandardMaterial({ color: 0x8f9bb3, roughness: 0.5, metalness: 0.4 })
+  );
+  rel.position.set(x, TINGGI_SEKAT + 0.025, 0);
+  grup.add(rel);
+  return grup;
+}
+
+function labelBlok(x, dalam, nama) {
+  const div = document.createElement("div");
+  div.className = "label blok";
+  div.textContent = nama;
+  const label = new (window.__CSS2DObject)(div);
+  label.position.set(x, 2.25, dalam / 2 - 0.3);
+  return label;
+}
+
+/* ==================== POJOK SANTAI ==================== */
+/* Kursi tanpa tugas pindah ke sini. Beanbag-nya setinggi dudukan kursi, jadi
+   pose duduk yang sama tetap kelihatan benar tanpa mesh tambahan. */
+function zonaSantai() {
+  const grup = new THREE.Group();
+
+  const karpet = new THREE.Mesh(
+    new THREE.PlaneGeometry(10.4, 2.4),
+    new THREE.MeshStandardMaterial({ color: 0x5d4a63, roughness: 0.98 })
+  );
+  karpet.rotation.x = -Math.PI / 2;
+  karpet.position.set(-1.8, 0.013, 4.2);
+  karpet.receiveShadow = true;
+  grup.add(karpet);
+
+  TITIK_SANTAI.forEach(function (t, i) {
+    const kain = bahan(WARNA_BAJU[(i + 3) % WARNA_BAJU.length], 0.95);
+
+    // beanbag, bukan bola yoga: gepeng, lebar, dan ada sandaran di belakang
+    const beanbag = new THREE.Mesh(new THREE.SphereGeometry(0.4, 20, 14), kain);
+    beanbag.scale.set(1.06, 0.5, 1.06);
+    beanbag.position.set(t.x, 0.2, t.z + 0.1);
+    beanbag.castShadow = true;
+    beanbag.receiveShadow = true;
+    grup.add(beanbag);
+
+    const sandaran = new THREE.Mesh(new THREE.SphereGeometry(0.4, 20, 14), kain);
+    sandaran.scale.set(0.95, 0.9, 0.5);
+    sandaran.position.set(t.x, 0.34, t.z - 0.22);
+    sandaran.castShadow = true;
+    grup.add(sandaran);
+  });
+
+  grup.add(tumpukPeti(-6.6, 4.5, 2));
+  grup.add(lampuGantung(-3.6, 4.0));
+  grup.add(lampuGantung(0.6, 4.0));
+
+  return grup;
+}
+
+/* ==================== MEJA + KOMPUTER + KURSI ==================== */
+/* `beban` = skor beban kerja kursi (bukan cuma jumlah tugas), jadi tumpukan
+   kertas dan nyala layar ikut beratnya pekerjaan, bukan banyaknya baris. */
+function bangunMeja(x, z, beban, mendesak) {
+  const grup = new THREE.Group();
+  const kayu = new THREE.MeshStandardMaterial({ color: 0xb5793f, roughness: 0.45, metalness: 0.05 });
+  const kayuGelap = new THREE.MeshStandardMaterial({ color: 0x7d5228, roughness: 0.6 });
+  const besi = new THREE.MeshStandardMaterial({ color: 0x3b4250, roughness: 0.35, metalness: 0.7 });
+  const plastik = new THREE.MeshStandardMaterial({ color: 0x2b3243, roughness: 0.55 });
+
+  const atas = new THREE.Mesh(new THREE.BoxGeometry(LEBAR_MEJA, TEBAL_MEJA, DALAM_MEJA), kayu);
+  atas.position.y = TINGGI_MEJA - TEBAL_MEJA / 2;
+  atas.castShadow = true;
+  atas.receiveShadow = true;
+  grup.add(atas);
+
+  const tinggiKaki = TINGGI_MEJA - TEBAL_MEJA;
+  [[-0.7, -0.32], [0.7, -0.32], [-0.7, 0.32], [0.7, 0.32]].forEach(function (p) {
+    const kaki = new THREE.Mesh(new THREE.BoxGeometry(0.08, tinggiKaki, 0.08), besi);
+    kaki.position.set(p[0], tinggiKaki / 2, p[1]);
+    kaki.castShadow = true;
+    grup.add(kaki);
+  });
+
+  // monitor: pusat layar 1.12, sejajar mata orang duduk
+  const layar = new THREE.Mesh(
+    new THREE.BoxGeometry(0.62, 0.38, 0.03),
+    new THREE.MeshStandardMaterial({
+      color: 0x12161f,
+      emissive: mendesak ? 0x8a2024 : 0x1b4a8f,
+      // meja tanpa beban = layar mati, orangnya juga tidak ada di situ
+      emissiveIntensity: beban === 0 ? 0.08 : 1.2,
+      roughness: 0.25,
+      metalness: 0.2
+    })
+  );
+  layar.position.set(0, 1.12, -0.12);
+  layar.rotation.x = -0.05;
+  layar.castShadow = true;
+  grup.add(layar);
+
+  const tangkai = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.16, 0.05), besi);
+  tangkai.position.set(0, 0.86, -0.14);
+  grup.add(tangkai);
+
+  const alasMonitor = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.02, 24), besi);
+  alasMonitor.position.set(0, TINGGI_MEJA + 0.01, -0.14);
+  grup.add(alasMonitor);
+
+  const keyboard = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.018, 0.15), plastik);
+  keyboard.position.set(0, TINGGI_MEJA + 0.01, 0.3);
+  keyboard.castShadow = true;
+  grup.add(keyboard);
+
+  const mouse = new THREE.Mesh(new THREE.SphereGeometry(0.035, 16, 12), plastik);
+  mouse.scale.set(1, 0.5, 1.4);
+  mouse.position.set(0.36, TINGGI_MEJA + 0.018, 0.3);
+  mouse.castShadow = true;
+  grup.add(mouse);
+
+  const mug = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.04, 0.035, 0.1, 20),
+    new THREE.MeshStandardMaterial({ color: 0xf3f5f8, roughness: 0.25 })
+  );
+  mug.position.set(-0.62, TINGGI_MEJA + 0.05, 0.2);
+  mug.castShadow = true;
+  grup.add(mug);
+
+  // kabel menjuntai dari belakang monitor ke lantai
+  const jalurKabel = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0.05, 0.95, -0.18),
+    new THREE.Vector3(0.15, 0.78, -0.1),
+    new THREE.Vector3(0.2, 0.5, 0),
+    new THREE.Vector3(0.14, 0.14, 0.1),
+    new THREE.Vector3(0.02, 0.02, 0.2)
+  ]);
+  const kabel = new THREE.Mesh(
+    new THREE.TubeGeometry(jalurKabel, 26, 0.012, 6, false),
+    bahan(0x22262e, 0.85)
+  );
+  kabel.castShadow = true;
+  grup.add(kabel);
+
+  // tempat pensil, biar meja tidak cuma keyboard dan mug
+  const gelas = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.045, 0.13, 16), plastik);
+  gelas.position.set(0.58, TINGGI_MEJA + 0.065, 0.05);
+  gelas.castShadow = true;
+  grup.add(gelas);
+
+  [[0.6, 0.02, 0.16], [0.55, -0.01, -0.2]].forEach(function (p) {
+    const pensil = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.22, 8), bahan(0xc8871f, 0.6));
+    pensil.position.set(p[0], TINGGI_MEJA + 0.15, 0.05 + p[1]);
+    pensil.rotation.set(p[2], 0, p[1]);
+    grup.add(pensil);
+  });
+
+  const kertas = new THREE.MeshStandardMaterial({ color: 0xfdfcf7, roughness: 0.95 });
+  const tumpuk = Math.min(beban, 6);
+  for (let i = 0; i < tumpuk; i++) {
+    const lembar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.012, 0.22), kertas);
+    lembar.position.set(-0.58, TINGGI_MEJA + 0.008 + i * 0.014, -0.24);
+    lembar.rotation.y = (i % 3 - 1) * 0.14;
+    lembar.castShadow = true;
+    grup.add(lembar);
+  }
+
+  // kursi: dudukan 0.45, sandaran sampai 0.99
+  const dudukan = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.07, 0.45), kayuGelap);
+  dudukan.position.set(0, TINGGI_DUDUK - 0.035, JARAK_MUNDUR);
+  dudukan.castShadow = true;
+  grup.add(dudukan);
+
+  const sandaran = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.5, 0.06), kayuGelap);
+  sandaran.position.set(0, TINGGI_DUDUK + 0.27, JARAK_MUNDUR + 0.21);
+  sandaran.castShadow = true;
+  grup.add(sandaran);
+
+  [[-0.18, 0.18], [0.18, 0.18], [-0.18, -0.18], [0.18, -0.18]].forEach(function (p) {
+    const kakiKursi = new THREE.Mesh(new THREE.BoxGeometry(0.05, TINGGI_DUDUK - 0.07, 0.05), besi);
+    kakiKursi.position.set(p[0], (TINGGI_DUDUK - 0.07) / 2, JARAK_MUNDUR + p[1]);
+    kakiKursi.castShadow = true;
+    grup.add(kakiKursi);
+  });
+
+  grup.position.set(x, 0, z);
+  return grup;
+}
+
+/* ==================== ORANG ==================== */
+function bahan(warna, kasar) {
+  return new THREE.MeshStandardMaterial({ color: warna, roughness: kasar === undefined ? 0.75 : kasar });
+}
+
+/* Satu sendi = satu poros putar. Isi sendi digeser ke bawah poros, jadi
+   memutar poros = memutar lengan/kaki dari pangkalnya. */
+function sendi(radius, panjang, mat, x, y, z, rotasiX) {
+  const poros = new THREE.Group();
+  poros.position.set(x, y, z);
+  poros.rotation.x = rotasiX;
+  const isi = new THREE.Mesh(new THREE.CapsuleGeometry(radius, panjang, 6, 16), mat);
+  isi.position.y = -(panjang / 2 + radius);
+  isi.castShadow = true;
+  poros.add(isi);
+  return poros;
+}
+
+function bangunOrang(i) {
+  const grup = new THREE.Group();
+  const kulit = bahan(WARNA_KULIT[i % WARNA_KULIT.length], 0.85);
+  const baju = bahan(WARNA_BAJU[i % WARNA_BAJU.length], 0.8);
+  const celana = bahan(WARNA_CELANA, 0.85);
+  const rambut = bahan(WARNA_RAMBUT[i % WARNA_RAMBUT.length], 0.9);
+
+  // panggul
+  const panggul = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.16, 0.24), celana);
+  panggul.position.y = PANGGUL_Y;
+  panggul.castShadow = true;
+  grup.add(panggul);
+
+  // badan, sedikit membungkuk ke layar
+  const badan = new THREE.Mesh(new THREE.CapsuleGeometry(0.175, 0.22, 8, 20), baju);
+  badan.position.set(0, PANGGUL_Y + 0.3, 0);
+  badan.rotation.x = -0.08;
+  badan.castShadow = true;
+  grup.add(badan);
+
+  // bahu dibulatkan biar tidak kotak
+  [-1, 1].forEach(function (s) {
+    const pundak = new THREE.Mesh(new THREE.SphereGeometry(0.085, 18, 14), baju);
+    pundak.position.set(s * 0.17, PANGGUL_Y + 0.52, 0);
+    pundak.castShadow = true;
+    grup.add(pundak);
+  });
+
+  // kerah dan ikat pinggang: pembeda baju dari badan, biar tidak terbaca kapsul polos
+  const kainGelap = bahan(
+    new THREE.Color(WARNA_BAJU[i % WARNA_BAJU.length]).multiplyScalar(0.72).getHex(),
+    0.85
+  );
+  const kerah = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.112, 0.05, 18), kainGelap);
+  kerah.position.set(0, PANGGUL_Y + 0.575, 0);
+  kerah.castShadow = true;
+  grup.add(kerah);
+
+  const ikat = new THREE.Mesh(new THREE.BoxGeometry(0.33, 0.05, 0.27), kainGelap);
+  ikat.position.set(0, PANGGUL_Y + 0.075, 0);
+  grup.add(ikat);
+
+  const leher = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.055, 0.09, 16), kulit);
+  leher.position.set(0, PANGGUL_Y + 0.6, -0.01);
+  grup.add(leher);
+
+  const kepala = new THREE.Mesh(new THREE.SphereGeometry(0.115, 28, 20), kulit);
+  kepala.position.set(0, PANGGUL_Y + 0.74, -0.02);
+  kepala.castShadow = true;
+  grup.add(kepala);
+
+  const batok = new THREE.Mesh(
+    new THREE.SphereGeometry(0.122, 28, 18, 0, Math.PI * 2, 0, Math.PI * 0.56), rambut
+  );
+  batok.position.set(0, PANGGUL_Y + 0.745, -0.035);
+  batok.castShadow = true;
+  grup.add(batok);
+
+  // mata: ini yang bikin terbaca sebagai orang, bukan boneka kosong
+  [-1, 1].forEach(function (s) {
+    const mata = new THREE.Mesh(new THREE.SphereGeometry(0.015, 12, 10), bahan(0x241d18, 0.4));
+    mata.position.set(s * 0.042, PANGGUL_Y + 0.75, 0.082);
+    grup.add(mata);
+  });
+
+  const hidung = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 10), kulit);
+  hidung.position.set(0, PANGGUL_Y + 0.727, 0.104);
+  grup.add(hidung);
+
+  // lengan: pangkal bahu, siku, lalu tangan mendarat di keyboard
+  function lengan(sisi) {
+    const atas = sendi(0.055, 0.19, baju, sisi * 0.195, PANGGUL_Y + 0.52, 0, -0.3);
+    const bawah = sendi(0.05, 0.18, kulit, 0, -0.3, 0, -1.15);
+    atas.add(bawah);
+    const tangan = new THREE.Mesh(new THREE.SphereGeometry(0.055, 16, 12), kulit);
+    tangan.position.y = -0.33;
+    tangan.castShadow = true;
+    bawah.add(tangan);
+    grup.add(atas);
+    return { atas: atas, bawah: bawah };
+  }
+  const kiri = lengan(-1);
+  const kanan = lengan(1);
+
+  // kaki: paha mendatar ke depan, betis turun, telapak di lantai
+  function kaki(sisi) {
+    const paha = sendi(0.075, 0.27, celana, sisi * 0.1, PANGGUL_Y, 0.04, -Math.PI / 2);
+    const betis = new THREE.Group();
+    betis.position.y = -0.42;
+    betis.rotation.x = Math.PI / 2;
+    const isi = new THREE.Mesh(new THREE.CapsuleGeometry(0.065, 0.3, 6, 14), celana);
+    isi.position.y = -0.215;
+    isi.castShadow = true;
+    betis.add(isi);
+    const telapak = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.22), bahan(0x21252e, 0.7));
+    telapak.position.set(0, -0.46, 0.04);
+    telapak.castShadow = true;
+    betis.add(telapak);
+    paha.add(betis);
+    grup.add(paha);
+    return { paha: paha, betis: betis };
+  }
+  const kakiKiri = kaki(-1);
+  const kakiKanan = kaki(1);
+
+  // pengendali game di depan dada; cuma muncul saat orangnya sedang santai
+  const pad = new THREE.Group();
+  const bodiPad = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.05, 0.09), bahan(0x2b3243, 0.5));
+  bodiPad.castShadow = true;
+  pad.add(bodiPad);
+  [-1, 1].forEach(function (s) {
+    const stik = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.03, 10), bahan(0x9aa4b8, 0.4));
+    stik.position.set(s * 0.05, 0.035, 0);
+    pad.add(stik);
+  });
+  const lampuPad = new THREE.Mesh(
+    new THREE.BoxGeometry(0.03, 0.012, 0.02),
+    new THREE.MeshStandardMaterial({ color: 0x0d2a1a, emissive: 0x39d98a, emissiveIntensity: 1.4 })
+  );
+  lampuPad.position.set(0, 0.03, -0.04);
+  pad.add(lampuPad);
+  pad.position.set(0, PANGGUL_Y + 0.36, 0.46);
+  pad.visible = false;
+  grup.add(pad);
+
+  // tinggi badan sedikit berbeda tiap orang, tapi tetap satu proporsi
+  grup.scale.setScalar(0.97 + (i % 3) * 0.02);
+
+  return {
+    grup: grup,
+    kepala: kepala,
+    lenganKiri: kiri,
+    lenganKanan: kanan,
+    kaki: [kakiKiri, kakiKanan],
+    pad: pad
+  };
+}
+
+function pasangLabel(grup, teks, mendesak) {
+  const div = document.createElement("div");
+  div.className = "label" + (mendesak ? " mendesak" : "");
+  div.textContent = teks;
+  const label = new (window.__CSS2DObject)(div);
+  label.position.set(0, 1.55, 0);
+  grup.add(label);
+}
+
+/* Tata letak blok. Urutan blok mengikuti urutan kemunculan kursi di roster,
+   jadi blok pertama di kiri. Seluruh komposisi otomatis di tengah ruangan. */
+function tataLetak(kursi) {
+  const urut = [];
+  const peta = new Map();
+  kursi.forEach(function (k, i) {
+    const nama = k.blok || "Blok Kerja";
+    if (!peta.has(nama)) {
+      peta.set(nama, []);
+      urut.push(nama);
+    }
+    peta.get(nama).push(i);
+  });
+
+  const posisi = [];
+  const blok = urut.map(function (nama, bi) {
+    const anggota = peta.get(nama);
+    const kolom = anggota.length > 1 ? KOLOM_BLOK : 1;
+    const baris = Math.ceil(anggota.length / kolom);
+    const pusatX = (bi - (urut.length - 1) / 2) * JARAK_BLOK;
+
+    anggota.forEach(function (indeks, n) {
+      posisi[indeks] = {
+        x: pusatX + ((n % kolom) - (kolom - 1) / 2) * JARAK_SISI,
+        z: (Math.floor(n / kolom) - (baris - 1) / 2) * JARAK_DALAM
+      };
+    });
+
+    return {
+      nama: nama,
+      anggota: anggota,
+      pusatX: pusatX,
+      lebar: (kolom - 1) * JARAK_SISI + LEBAR_MEJA + 1.2,
+      dalam: (baris - 1) * JARAK_DALAM + DALAM_MEJA + 2.8
+    };
+  });
+
+  return { blok: blok, posisi: posisi };
+}
+
+function bangunSemuaOrang() {
+  orang.forEach(function (o) { scene.remove(o.grup); });
+  orang = [];
+
+  const tata = tataLetak(data.kursi);
+  let santaiKe = 0;
+
+  data.kursi.forEach(function (k, i) {
+    const x = tata.posisi[i].x;
+    const z = tata.posisi[i].z + JARAK_MUNDUR;
+
+    const bagian = bangunOrang(i);
+    bagian.grup.position.set(x, 0, z);
+    bagian.grup.rotation.y = Math.PI;      // menghadap meja & monitor
+    bagian.grup.userData.indeks = i;
+    scene.add(bagian.grup);
+
+    // kursi tanpa beban sama sekali: orangnya berdiri dan pindah ke pojok santai
+    const santai = k.skor === 0;
+    pasangLabel(bagian.grup, k.nama + (santai ? " · santai" : ""), k.mendesak);
+
+    bagian.kursi = k;
+    bagian.santai = santai;
+    bagian.rumah = { x: x, z: z };
+    bagian.spot = santai ? TITIK_SANTAI[santaiKe++ % TITIK_SANTAI.length] : null;
+    bagian.fase = Math.random() * Math.PI * 2;
+    bagian.faseLangkah = Math.random() * Math.PI * 2;
+    bagian.duduk = 1;                      // mulai dari duduk di kursi, lalu berjalan
+    orang.push(bagian);
+  });
+}
+
+/* ==================== ANIMASI ==================== */
+/* Orang berjalan ke tujuannya sendiri: kursi kalau ada tugas, beanbag di pojok
+   santai kalau tidak ada. Semua gerak halus lewat lerp, jadi perpindahannya
+   kelihatan seperti berdiri lalu jalan, bukan melompat. */
+function perbaruiOrang(dt) {
+  const maks = Math.max(data.skor_maks, 1);
+
+  orang.forEach(function (o) {
+    const santai = !!o.santai;
+    const tujuan = santai ? o.spot : o.rumah;
+    const dx = tujuan.x - o.grup.position.x;
+    const dz = tujuan.z - o.grup.position.z;
+    const jarak = Math.hypot(dx, dz);
+    const jalan = jarak > 0.04;
+
+    if (jalan) {
+      const langkah = Math.min(jarak, dt * 1.4);
+      o.grup.position.x += (dx / jarak) * langkah;
+      o.grup.position.z += (dz / jarak) * langkah;
+      o.faseLangkah += dt * 7;
+    }
+
+    // 1 = duduk, 0 = berdiri di tengah jalan
+    o.duduk += ((jalan ? 0 : 1) - o.duduk) * Math.min(1, dt * 5);
+    const d = o.duduk;
+
+    // hadap arah jalan; kalau sudah sampai, hadap meja (kerja) atau kamera (santai)
+    const arah = jalan ? Math.atan2(dx, dz) : (santai ? 0 : Math.PI);
+    let beda = arah - o.grup.rotation.y;
+    while (beda > Math.PI) beda -= Math.PI * 2;
+    while (beda < -Math.PI) beda += Math.PI * 2;
+    o.grup.rotation.y += beda * Math.min(1, dt * 6);
+
+    // kaki: mendatar saat duduk, menjuntai dan mengayun saat berjalan
+    const ayun = Math.sin(o.faseLangkah) * 0.35 * (1 - d);
+    o.kaki[0].paha.rotation.x = -d * Math.PI / 2 + ayun;
+    o.kaki[1].paha.rotation.x = -d * Math.PI / 2 - ayun;
+    o.kaki[0].betis.rotation.x = d * Math.PI / 2;
+    o.kaki[1].betis.rotation.x = d * Math.PI / 2;
+
+    if (santai && !jalan) {
+      // main game: dua tangan di depan dada, jempol bolak-balik
+      o.fase += dt * 2.2;
+      const tekan = Math.sin(o.fase) * 0.06;
+      o.lenganKiri.atas.rotation.x = -0.62 + tekan;
+      o.lenganKanan.atas.rotation.x = -0.62 - tekan;
+      o.lenganKiri.bawah.rotation.x = -1.2;
+      o.lenganKanan.bawah.rotation.x = -1.2;
+      o.kepala.rotation.y = Math.sin(o.fase * 0.4) * 0.1;
+      o.grup.position.y = Math.abs(Math.sin(o.fase * 0.7)) * 0.012;
+      o.pad.visible = true;
+    } else {
+      const bebanRasio = Math.min((o.kursi ? o.kursi.skor : 0) / maks, 1);
+
+      // makin berat beban, makin cepat mengetik; sambil berjalan tangan diam di samping
+      o.fase += dt * (3.5 + bebanRasio * 6);
+      const ketik = Math.sin(o.fase) * 0.09 * d;
+      o.lenganKiri.atas.rotation.x = -0.3 * d - ketik * 0.3;
+      o.lenganKanan.atas.rotation.x = -0.3 * d + ketik * 0.3;
+      o.lenganKiri.bawah.rotation.x = -1.15 * d + ketik;
+      o.lenganKanan.bawah.rotation.x = -1.15 * d - ketik;
+      o.kepala.rotation.y = Math.sin(o.fase * 0.25) * 0.16;
+      o.grup.position.y = (1 - d) * TINGGI_BERDIRI + Math.abs(Math.sin(o.faseLangkah)) * 0.025 * (1 - d);
+      o.pad.visible = false;
+    }
+  });
+}
+
+/* ==================== PANEL ==================== */
+/* Daftar kursi di sidebar, dikelompokkan per blok. Klik = pilih + fokus kamera. */
+function bangunDaftar() {
+  const wadah = document.getElementById("daftar");
+  const gulir = wadah.scrollTop;
+  const warnaPerBlok = new Map();
+  data.kursi.forEach(function (k) {
+    const nama = k.blok || "Blok Kerja";
+    if (!warnaPerBlok.has(nama)) {
+      warnaPerBlok.set(nama, WARNA_BLOK[warnaPerBlok.size % WARNA_BLOK.length]);
+    }
+  });
+
+  wadah.innerHTML = "";
+  warnaPerBlok.forEach(function (warna, nama) {
+    const judul = document.createElement("div");
+    judul.className = "blok-judul";
+    judul.textContent = nama;
+    wadah.appendChild(judul);
+
+    data.kursi.forEach(function (k, i) {
+      if ((k.blok || "Blok Kerja") !== nama) return;
+      const tombol = document.createElement("button");
+      tombol.type = "button";
+      tombol.dataset.indeks = String(i);
+      tombol.innerHTML =
+        '<span class="titik" style="background:#' + warna.toString(16).padStart(6, "0") + '"></span>' +
+        '<span><span class="nama-kursi">' + k.nama + "</span>" +
+        '<span class="kecil' + (k.skor ? "" : " santai") + '">' +
+        (k.skor ? k.jumlah + " tugas · beban " + k.skor : "kosong · santai") +
+        "</span></span>";
+      tombol.addEventListener("click", function () { pilihKursi(i, true); });
+      wadah.appendChild(tombol);
+    });
+  });
+
+  wadah.scrollTop = gulir;
+  tandaiAktif();
+}
+
+function tandaiAktif() {
+  document.querySelectorAll("#daftar button").forEach(function (b) {
+    b.classList.toggle("aktif", Number(b.dataset.indeks) === terpilih);
+  });
+}
+
+function pilihKursi(i, fokus) {
+  if (!data.kursi[i]) return;
+  terpilih = i;
+  tampilkanPanel(i);
+  tandaiAktif();
+  if (fokus) fokusKursi(i);
+}
+
+function tampilkanPanel(i) {
+  const k = data.kursi[i];
+  const maks = Math.max(data.skor_maks, 1);
+  document.getElementById("panel-nama").textContent = k.nama;
+  const periksa = k.diperiksa === null || k.diperiksa === undefined
+    ? ""
+    : " · diperiksa: <b>" + k.diperiksa + "</b>";
+  document.getElementById("panel-ringkas").innerHTML =
+    (k.blok ? k.blok + " · " : "") + k.mata_kuliah +
+    "<br>tugas: <b>" + k.jumlah + "</b> · mendesak: <b>" + k.mendesak + "</b> · beban: <b>" + k.skor + "</b>" +
+    periksa +
+    '<div class="bar"><span style="width:' + Math.round((k.skor / maks) * 100) + '%"></span></div>' +
+    (k.skor === 0
+      ? '<span class="santai-teks">Kursi ini tidak memegang tugas. Orangnya ada di pojok santai.</span>'
+      : "");
+
+  const daftar = document.getElementById("panel-tugas");
+  daftar.innerHTML = "";
+  if (!k.tugas.length) {
+    daftar.innerHTML = '<li class="kosong">Tidak ada tugas aktif di kursi ini.</li>';
+    return;
+  }
+  k.tugas.forEach(function (t) {
+    const li = document.createElement("li");
+    const akut = t.sisa_jam !== null && t.sisa_jam < 24;
+    li.innerHTML =
+      "<b>" + t.nama + "</b>" +
+      '<span class="sisa' + (akut ? " akut" : "") + '">' + t.mata_kuliah + " · " + sisaTeks(t.sisa_jam) + "</span>" +
+      '<a href="' + t.link + '" target="_blank" rel="noopener">buka tugas</a>';
+    daftar.appendChild(li);
+  });
+}
+
+/* ==================== MUAT DATA ==================== */
+function bangunUlangPerabot() {
+  scene.children
+    .filter(function (o) { return o.userData.perabot; })
+    .forEach(function (o) { scene.remove(o); });
+  lampuGantungDaftar.length = 0;      // lampu lama ikut terbuang bersama grupnya
+  kilauDaftar.length = 0;
+
+  const tata = tataLetak(data.kursi);
+
+  tata.blok.forEach(function (b, bi) {
+    const grup = new THREE.Group();
+    grup.userData.perabot = true;
+    const warna = WARNA_BLOK[bi % WARNA_BLOK.length];
+
+    grup.add(zonaLantai(b.pusatX, b.lebar, b.dalam, warna));
+    grup.add(papanAlat(b.pusatX, Math.min(b.lebar - 0.8, 3.6)));
+    grup.add(lampuGantung(b.pusatX - 1.1, 0.4));
+    grup.add(lampuGantung(b.pusatX + 1.1, 0.4));
+    grup.add(lemariAlat(b.pusatX - b.lebar / 2 + 0.45, b.dalam / 2 - 0.9));
+    grup.add(tumpukPeti(b.pusatX + b.lebar / 2 - 0.5, b.dalam / 2 - 0.9, 3));
+    b.anggota.forEach(function (indeks) {
+      const p = tata.posisi[indeks];
+      const k = data.kursi[indeks];
+      grup.add(bangunMeja(p.x, p.z, k.skor, k.mendesak));
+    });
+    grup.add(labelBlok(b.pusatX, b.dalam, b.nama));
+
+    scene.add(grup);
+  });
+
+  // pojok santai hanya muncul kalau memang ada kursi yang menganggur
+  if (data.kursi.some(function (k) { return k.skor === 0; })) {
+    const pojok = zonaSantai();
+    pojok.userData.perabot = true;
+    scene.add(pojok);
+  }
+
+  // sekat hanya di antara blok, bukan di tepi terluar ruangan
+  for (let i = 0; i + 1 < tata.blok.length; i++) {
+    const kiri = tata.blok[i];
+    const kanan = tata.blok[i + 1];
+    const grup = sekat((kiri.pusatX + kanan.pusatX) / 2, Math.max(kiri.dalam, kanan.dalam) * 0.92);
+    grup.userData.perabot = true;
+    scene.add(grup);
+  }
+
+  if (hemi) terapkanMode();           // lampu gantung baru harus ikut mode malam
+}
+
+/* ==================== MODE MALAM ==================== */
+function terapkanMode() {
+  const malam = modeMalam;
+  hemi.intensity = malam ? 0.18 : 0.62;
+  matahari.intensity = malam ? 0.3 : 1.9;
+  sinarJendela.forEach(function (l) { l.intensity = malam ? 0.12 : 0.6; });
+  kacaJendela.forEach(function (m) { m.emissiveIntensity = malam ? 0.12 : 1.2; });
+  lampuGantungDaftar.forEach(function (l) { l.intensity = malam ? 26 : 10; });
+  kilauDaftar.forEach(function (m) { m.opacity = malam ? 0.7 : 0.34; });
+  scene.background = new THREE.Color(malam ? "#0c0f15" : warnaBg);
+  document.getElementById("petunjuk").innerHTML =
+    PETUNJUK + (malam ? " · 🌙 malam" : "");
+}
+
+/* ==================== FOKUS KAMERA ==================== */
+/* Kamera berhenti di depan orang yang duduk, jadi wajahnya kelihatan. Arah
+   hadap yang dipakai, bukan letak mejanya — orang yang santai menghadap kamera,
+   bukan menghadap monitor. */
+function fokusKursi(i) {
+  const o = orang[i];
+  if (!o) return;
+  const p = o.grup.position;
+  const ry = o.grup.rotation.y;
+  const fx = Math.sin(ry), fz = Math.cos(ry);
+  const maju = o.santai ? 1.2 : 2.35;      // yang santai duduk dekat dinding depan
+  const geser = o.santai ? 0.9 : 0.45;
+  tuju.pos = new THREE.Vector3(p.x + fx * maju + geser, 1.45, p.z + fz * maju);
+  tuju.target = new THREE.Vector3(p.x, 1.15, p.z + fz * 0.3);
+}
+
+function render(payload) {
+  const lama = data.kursi;
+  const perluOrang = payload.kursi.length !== lama.length ||
+    payload.kursi.some(function (k, i) {
+      return !lama[i] || lama[i].nama !== k.nama || lama[i].mata_kuliah !== k.mata_kuliah ||
+        // nol <-> ada beban: orangnya berpindah antara meja dan pojok santai
+        (lama[i].skor === 0) !== (k.skor === 0);
+    });
+  const perluPerabot = perluOrang ||
+    payload.kursi.some(function (k, i) {
+      return !lama[i] || lama[i].jumlah !== k.jumlah || lama[i].skor !== k.skor ||
+        lama[i].mendesak !== k.mendesak;
+    });
+
+  data = payload;
+
+  if (perluOrang) bangunSemuaOrang();
+  if (perluPerabot) bangunUlangPerabot();
+  orang.forEach(function (o, i) { o.kursi = data.kursi[i]; });
+
+  if (terpilih === null && data.kursi.length) terpilih = 0;
+  bangunDaftar();
+  if (terpilih !== null) tampilkanPanel(terpilih);
+
+  const cek = data.terakhir_cek ? new Date(data.terakhir_cek).toLocaleString("id-ID") : "belum pernah";
+  document.getElementById("meta").textContent =
+    "Total tugas belum dikumpulkan: " + data.total_tugas +
+    " · pengecekan terakhir: " + cek +
+    " · diperbarui: " + new Date(data.diperbarui).toLocaleTimeString("id-ID");
+}
+
+async function muat() {
+  try {
+    const res = await fetch("/api/state");
+    render(await res.json());
+  } catch (e) {
+    document.getElementById("meta").textContent = "gagal memuat data: " + e;
+  }
+}
+
+/* ==================== KLIK ORANG ==================== */
+function pasangKlik() {
+  const raycaster = new THREE.Raycaster();
+  const titik = new THREE.Vector2();
+  let ditekan = null;
+
+  renderer.domElement.addEventListener("pointerdown", function (e) {
+    ditekan = { x: e.clientX, y: e.clientY };
+    tuju.pos = null;                   // sentuhan pengguna menghentikan animasi kamera
+    tuju.target = null;
+  });
+
+  renderer.domElement.addEventListener("pointerup", function (e) {
+    if (!ditekan || Math.hypot(e.clientX - ditekan.x, e.clientY - ditekan.y) > 5) return;
+
+    const kotak = renderer.domElement.getBoundingClientRect();
+    titik.x = ((e.clientX - kotak.left) / kotak.width) * 2 - 1;
+    titik.y = -((e.clientY - kotak.top) / kotak.height) * 2 + 1;
+    raycaster.setFromCamera(titik, camera);
+
+    const kena = raycaster.intersectObjects(orang.map(function (o) { return o.grup; }), true);
+    if (!kena.length) return;
+
+    let objek = kena[0].object;
+    while (objek && objek.userData.indeks === undefined) objek = objek.parent;
+    if (objek) pilihKursi(objek.userData.indeks, true);
+  });
+}
+
+function pasangTombol() {
+  addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k === "f" && terpilih !== null) {
+      fokusKursi(terpilih);
+    } else if (k === "m") {
+      modeMalam = !modeMalam;
+      terapkanMode();
+    }
+  });
+}
+
+/* ==================== MULAI ==================== */
+async function mulai() {
+  const ruangan = document.getElementById("ruangan");
+
+  THREE = await import("three");
+  const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
+  const { CSS2DRenderer, CSS2DObject } = await import("three/addons/renderers/CSS2DRenderer.js");
+  const { RoomEnvironment } = await import("three/addons/environments/RoomEnvironment.js");
+  window.__CSS2DObject = CSS2DObject;
+
+  scene = new THREE.Scene();
+  warnaBg = getComputedStyle(document.body).getPropertyValue("--bg").trim() || "#eef2fa";
+  scene.background = new THREE.Color(warnaBg);
+
+  camera = new THREE.PerspectiveCamera(45, ruangan.clientWidth / Math.max(ruangan.clientHeight, 1), 0.1, 100);
+  camera.position.set(0, 5.4, 10.8);          // cadangan; pasAwal() yang menentukan jarak akhir
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(ruangan.clientWidth, ruangan.clientHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  ruangan.appendChild(renderer.domElement);
+
+  // pencahayaan tidak langsung: inilah yang membuat material terlihat seperti benda nyata
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+  labelRenderer = new CSS2DRenderer();
+  labelRenderer.setSize(ruangan.clientWidth, ruangan.clientHeight);
+  labelRenderer.domElement.style.position = "absolute";
+  labelRenderer.domElement.style.top = "0";
+  labelRenderer.domElement.style.pointerEvents = "none";
+  ruangan.appendChild(labelRenderer.domElement);
+
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 0.9, 0.4);
+  controls.enableDamping = true;
+  controls.maxPolarAngle = Math.PI / 2.15;
+  controls.minDistance = 2;
+  controls.maxDistance = 24;
+
+  hemi = new THREE.HemisphereLight(0xffffff, 0x9c8b74, 0.5);
+  scene.add(hemi);
+
+  matahari = new THREE.DirectionalLight(0xfff6e8, 2.0);
+  matahari.position.set(4, 7, 5);
+  matahari.castShadow = true;
+  matahari.shadow.mapSize.set(2048, 2048);
+  matahari.shadow.camera.left = -10;
+  matahari.shadow.camera.right = 10;
+  matahari.shadow.camera.top = 10;
+  matahari.shadow.camera.bottom = -9;
+  matahari.shadow.bias = -0.0004;
+  matahari.shadow.normalBias = 0.02;
+  scene.add(matahari);
+
+  bangunRuangan();
+  pasangKlik();
+  pasangTombol();
+  await muat();
+  terapkanMode();
+
+  /* Kamera awal dipasang menurut lebar jendela: ruangan ini lebar, jadi di
+     jendela sempit sudut pandang horizontalnya harus dilebarkan. Sekali saja,
+     supaya zoom dan putaranmu tidak dilawan. */
+  let sudahPas = false;
+  function pasAwal() {
+    if (sudahPas || !camera.aspect) return;
+    const sudutV = (camera.fov * Math.PI) / 180;
+    const sudutH = 2 * Math.atan(Math.tan(sudutV / 2) * camera.aspect);
+    const jarak = Math.max(7.6 / Math.tan(sudutH / 2), 4.2 / Math.tan(sudutV / 2));
+    const arah = new THREE.Vector3(0, 0.62, 1).normalize();
+    camera.position.copy(controls.target).addScaledVector(arah, jarak);
+    sudahPas = true;
+  }
+
+  function ukuranUlang() {
+    const l = ruangan.clientWidth, t = ruangan.clientHeight;
+    if (!l || !t) return;
+    camera.aspect = l / t;
+    camera.updateProjectionMatrix();
+    renderer.setSize(l, t);
+    labelRenderer.setSize(l, t);
+  }
+
+  addEventListener("resize", ukuranUlang);
+  // ukuran wadah berubah tanpa jendela berubah: masuk layar penuh, sidebar
+  // menyusut, atau scrollbar hilang
+  if (window.ResizeObserver) new ResizeObserver(ukuranUlang).observe(ruangan);
+  ukuranUlang();
+  pasAwal();
+
+  setInterval(muat, 15000);
+
+  function putar(sekarang) {
+    const dt = Math.min((sekarang - jam.terakhir) / 1000, 0.05);
+    jam.terakhir = sekarang;
+    perbaruiOrang(dt);
+
+    if (tuju.pos) {                    // terbang halus ke kursi yang dipilih
+      const alpha = 1 - Math.exp(-dt * 6);
+      camera.position.lerp(tuju.pos, alpha);
+      controls.target.lerp(tuju.target, alpha);
+      if (camera.position.distanceTo(tuju.pos) < 0.03) {
+        camera.position.copy(tuju.pos);
+        controls.target.copy(tuju.target);
+        tuju.pos = null;
+        tuju.target = null;
+      }
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+    labelRenderer.render(scene, camera);
+    requestAnimationFrame(putar);
+  }
+  requestAnimationFrame(putar);
+}
+
+/* Layar penuh: seluruh halaman, bukan cuma kanvasnya — header dan tombol ini
+   ikut terlihat, jadi keluar juga gampang (Esc juga bisa). */
+function pasangLayar() {
+  const tombol = document.getElementById("tombol-layar");
+  tombol.addEventListener("click", function () {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    } else {
+      tombol.hidden = true;              // browser tidak mendukung, jangan pamer tombol mati
+    }
+  });
+  document.addEventListener("fullscreenchange", function () {
+    tombol.textContent = document.fullscreenElement ? "⛶ Keluar" : "⛶ Layar penuh";
+  });
+}
+
+pasangLayar();
+
+mulai().catch(function (e) {
+  const ruangan = document.getElementById("ruangan");
+  ruangan.innerHTML =
+    '<div class="peringatan">Gagal memuat tampilan 3D.<br>' +
+    'Halaman ini perlu akses internet ke cdn.jsdelivr.net untuk three.js, dan browser harus mendukung WebGL.<br><br>' +
+    "<code>" + e + "</code></div>";
+});
+</script>
+</body>
+</html>

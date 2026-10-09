@@ -67,43 +67,29 @@ echo "[5/5] File .env ditemukan."
 
 # --- 6. Setup systemd service (opsional) ---
 if [ "$1" == "--install-service" ]; then
-    SERVICE_NAME="hermes-agent"
-    SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
+    UNITS=("hermes-bot" "hermes-scraper" "hermes-brain" "hermes-dashboard")
+    mkdir -p "$SCRIPT_DIR/logs"
 
     echo ""
-    echo "Installing systemd service: $SERVICE_NAME ..."
+    echo "Installing systemd services: ${UNITS[*]} ..."
 
-    sudo tee "$SERVICE_FILE" > /dev/null << EOF
-[Unit]
-Description=Hermes E-Learning Agent
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=$USER
-WorkingDirectory=$SCRIPT_DIR
-ExecStart=$SCRIPT_DIR/venv/bin/python $SCRIPT_DIR/hermes_cloud_agent.py
-Restart=always
-RestartSec=10
-StandardOutput=append:$SCRIPT_DIR/logs/hermes.log
-ErrorOutput=append:$SCRIPT_DIR/logs/hermes_error.log
-Environment=PATH=$SCRIPT_DIR/venv/bin:/usr/bin:/bin
-
-[Install]
-WantedBy=multi-user.target
-EOF
+    for UNIT in "${UNITS[@]}"; do
+        sed "s|__DIR__|$SCRIPT_DIR|g; s|__USER__|$USER|g" \
+            "$SCRIPT_DIR/$UNIT.service" \
+            | sudo tee "/etc/systemd/system/$UNIT.service" > /dev/null
+    done
 
     sudo systemctl daemon-reload
-    sudo systemctl enable "$SERVICE_NAME"
-    sudo systemctl start "$SERVICE_NAME"
+    for UNIT in "${UNITS[@]}"; do
+        sudo systemctl enable "$UNIT"
+        sudo systemctl restart "$UNIT"
+    done
 
     echo ""
-    echo "[OK] Systemd service terinstall!"
-    echo "  Status:  sudo systemctl status $SERVICE_NAME"
-    echo "  Stop:    sudo systemctl stop $SERVICE_NAME"
-    echo "  Restart: sudo systemctl restart $SERVICE_NAME"
-    echo "  Log:     sudo journalctl -u $SERVICE_NAME -f"
+    echo "[OK] Semua service terinstall!"
+    echo "  Status   : sudo systemctl status hermes-bot"
+    echo "  Log      : sudo journalctl -u hermes-scraper -f"
+    echo "  Dashboard: http://127.0.0.1:8080 (akses lewat SSH tunnel)"
     exit 0
 fi
 

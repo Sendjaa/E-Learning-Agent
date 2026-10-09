@@ -1,0 +1,18 @@
+[Unit]
+Description=Hermes Dashboard (kelas animasi)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__DIR__
+Environment=PATH=__DIR__/venv/bin:/usr/bin:/bin
+ExecStart=__DIR__/venv/bin/python -m hermes.dashboard.server
+Restart=always
+RestartSec=10
+StandardOutput=append:__DIR__/logs/dashboard.log
+ErrorOutput=append:__DIR__/logs/dashboard_error.log
+
+[Install]
+WantedBy=multi-user.target

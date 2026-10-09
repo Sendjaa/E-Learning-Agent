@@ -386,12 +386,20 @@ def run_hermes_agent():
 
             if total_tugas > 0:
                 waktu_cek = datetime.now().strftime("%d %B %Y, %H:%M")
-                
-                # Pemrosesan satu per satu tugas
+
+                # Parse SEMUA baris linimasa dulu. ambil_detail_tugas() memakai
+                # page.goto(), jadi locator linimasa sudah hilang begitu tugas
+                # pertama dibuka -- kalau di-parse sambil jalan, tugas ke-2 dst gagal.
+                baris_linimasa = []
                 for i in range(total_tugas):
                     try:
-                        item = timeline_items.nth(i)
-                        timeline = parse_timeline_item(item)
+                        baris_linimasa.append(parse_timeline_item(timeline_items.nth(i)))
+                    except Exception as e_item:
+                        print(f"[Warning] Gagal membaca baris linimasa ke-{i}: {e_item}")
+
+                # Pemrosesan satu per satu tugas
+                for i, timeline in enumerate(baris_linimasa):
+                    try:
                         if not timeline["link_tugas"]:
                             continue
 
@@ -436,6 +444,12 @@ def run_hermes_agent():
             else:
                 print("[Status] Bersih! Tidak ada tugas aktif di Linimasa.")
                 jumlah_blok = page.locator(".block_timeline").count()
+                jumlah_region = page.locator("[data-region^='event-list']").count()
+                jumlah_link_assign = page.locator("a[href*='mod/assign']").count()
+                print(
+                    f"[Debug] blok_timeline={jumlah_blok} "
+                    f"region_event_list={jumlah_region} link_mod_assign={jumlah_link_assign}"
+                )
                 dump = os.path.join(_SCRIPT_DIR, "debug_linimasa.html")
                 try:
                     with open(dump, "w", encoding="utf-8") as f_dump:
@@ -445,7 +459,8 @@ def run_hermes_agent():
                 send_telegram_message(
                     "✅ <b>Tidak ada tugas aktif</b> di Linimasa E-Learning saat ini.\n"
                     f"🌐 URL: {escape_html(page.url)}\n"
-                    f"🧩 Blok Linimasa terdeteksi: {jumlah_blok}\n"
+                    f"🧩 blok_timeline: {jumlah_blok} | region_event_list: {jumlah_region} | "
+                    f"link mod/assign: {jumlah_link_assign}\n"
                     f"<i>HTML halaman disimpan ke {escape_html(dump)} untuk diperiksa.</i>"
                 )
 
@@ -541,6 +556,10 @@ def jalankan_polling_tombol():
 if __name__ == "__main__":
     import threading
     print("Hermes Agent System Started.")
+    print(
+        f"[Build] {os.path.abspath(__file__)} "
+        f"(mtime {datetime.fromtimestamp(os.path.getmtime(__file__)):%Y-%m-%d %H:%M})"
+    )
     
     # Jalankan pendengar klik tombol telegram di Thread terpisah agar berjalan beriringan
     thread_tombol = threading.Thread(target=jalankan_polling_tombol, daemon=True)

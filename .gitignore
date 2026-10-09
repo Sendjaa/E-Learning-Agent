@@ -18,3 +18,16 @@ Thumbs.db
 
 # Dump HTML halaman E-Learning saat linimasa terdeteksi kosong
 debug_linimasa.html
+
+# Database: berisi data akademik dan draf jawaban, bukan untuk direpo.
+# Skema dibuat otomatis oleh store.init_db() saat proses pertama jalan.
+hermes.db
+*.db-wal
+*.db-shm
+
+# Dibuat oleh install.sh (virtualenv) dan run.sh (log tiap proses)
+venv/
+logs/
+
+# Cache permission tool lokal, spesifik per mesin
+.qoder/
